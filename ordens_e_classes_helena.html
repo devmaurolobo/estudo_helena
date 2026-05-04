@@ -349,9 +349,173 @@
     .classe-header { font-size: 10px; padding: 8px 2px; }
     .classe-header span { display: none; }
   }
+
+  .icon-btn { background: var(--surface); border: 2px solid var(--border); color: var(--ink-soft); width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: all 0.2s ease; }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.05); }
+  .sound-toggle { position: fixed; top: 20px; right: 20px; z-index: 50; }
+  .settings-toggle { position: fixed; top: 20px; right: 70px; z-index: 50; }
+  .config-panel { position: fixed; top: 70px; right: 20px; z-index: 60; background: var(--surface); border: 2px solid var(--border); border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); padding: 18px; width: 280px; font-family: inherit; }
+  .config-panel[hidden] { display: none; }
+  .config-panel h3 { font-weight: 700; font-size: 1.1rem; margin: 0 0 12px; color: var(--ink); }
+  .config-panel label { display: block; font-size: 0.85rem; color: var(--ink-soft); margin-top: 10px; margin-bottom: 4px; }
+  .config-panel input, .config-panel select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: var(--surface); color: var(--ink); }
+  .config-panel input:focus, .config-panel select:focus { outline: none; border-color: var(--accent); }
+  .config-panel .btn-row { display: flex; gap: 8px; margin-top: 14px; }
+  .config-panel .btn-row button { flex: 1; padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font-family: inherit; font-weight: 600; cursor: pointer; }
+  .config-panel .btn-row button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .config-panel .btn-row button:hover { filter: brightness(0.97); }
+  .config-panel .hint { font-size: 0.75rem; color: var(--ink-soft); margin-top: 6px; }
 </style>
 </head>
 <body>
+
+<button id="soundToggle" class="icon-btn sound-toggle" aria-label="Som">🔊</button>
+<button id="settingsToggle" class="icon-btn settings-toggle" aria-label="Configurações de voz">⚙️</button>
+
+<div id="configPanel" class="config-panel" hidden>
+  <h3>Voz da narração</h3>
+  <label for="cfgKey">Chave da OpenAI</label>
+  <input type="password" id="cfgKey" placeholder="sk-..." autocomplete="off" />
+  <div class="hint">Salva só no seu navegador.</div>
+  <label for="cfgVoz">Voz</label>
+  <select id="cfgVoz"></select>
+  <div class="btn-row">
+    <button id="cfgTestar" type="button">Testar</button>
+    <button id="cfgSalvar" type="button" class="primary">Salvar</button>
+  </div>
+</div>
+
+<script>
+// === NARRAÇÃO (OpenAI TTS - gpt-4o-mini-tts) ===
+var somAtivo = true;
+const VOZES_OPENAI = ['alloy','ash','ballad','coral','echo','fable','nova','onyx','sage','shimmer','verse'];
+const VOZ_DEFAULT = 'nova';
+let audioEl = null;
+let aborter = null;
+let geracaoNarracao = 0;
+const cacheTTS = new Map();
+let configAbertoUmaVez = false;
+
+function getKey() { return localStorage.getItem('openai_tts_key') || ''; }
+function getVoz() { return localStorage.getItem('openai_tts_voice') || VOZ_DEFAULT; }
+
+function limparParaFala(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html || '';
+  let texto = d.textContent || d.innerText || '';
+  texto = texto
+    .replace(/÷/g, ' dividido por ')
+    .replace(/×/g, ' vezes ')
+    .replace(/−/g, ' menos ')
+    .replace(/\+/g, ' mais ')
+    .replace(/=/g, ' é igual a ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return texto;
+}
+
+function abrirConfigPanel() {
+  const p = document.getElementById('configPanel');
+  if (p) {
+    document.getElementById('cfgKey').value = getKey();
+    document.getElementById('cfgVoz').value = getVoz();
+    p.hidden = false;
+  }
+}
+
+async function narrar(titulo, texto) {
+  if (!somAtivo) return;
+  const conteudo = ((titulo ? titulo + '. ' : '') + limparParaFala(texto || '')).trim();
+  if (!conteudo) return;
+  const key = getKey();
+  if (!key) {
+    if (!configAbertoUmaVez) { configAbertoUmaVez = true; abrirConfigPanel(); }
+    return;
+  }
+  pararNarracao();
+  const meu = ++geracaoNarracao;
+  const voz = getVoz();
+  const cacheKey = voz + '|' + conteudo;
+  let url = cacheTTS.get(cacheKey);
+  if (!url) {
+    aborter = new AbortController();
+    try {
+      const r = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: voz, input: conteudo, response_format: 'mp3' }),
+        signal: aborter.signal,
+      });
+      if (!r.ok) { console.warn('TTS OpenAI', r.status, await r.text().catch(() => '')); return; }
+      const blob = await r.blob();
+      url = URL.createObjectURL(blob);
+      cacheTTS.set(cacheKey, url);
+    } catch (e) { if (e.name !== 'AbortError') console.warn('TTS', e); return; }
+  }
+  if (meu !== geracaoNarracao) return;
+  if (!audioEl) audioEl = new Audio();
+  audioEl.src = url;
+  audioEl.play().catch(() => {});
+}
+
+function pararNarracao() {
+  geracaoNarracao++;
+  if (_narrarTimer) { clearTimeout(_narrarTimer); _narrarTimer = null; }
+  if (aborter) { try { aborter.abort(); } catch (e) {} aborter = null; }
+  if (audioEl) { try { audioEl.pause(); audioEl.currentTime = 0; } catch (e) {} }
+}
+
+let _narrarTimer = null;
+function narrarDebounced(titulo, texto, ms) {
+  if (_narrarTimer) clearTimeout(_narrarTimer);
+  _narrarTimer = setTimeout(() => { _narrarTimer = null; narrar(titulo, texto); }, ms == null ? 600 : ms);
+}
+
+(function initConfigPanel() {
+  const sel = document.getElementById('cfgVoz');
+  if (sel) {
+    for (const v of VOZES_OPENAI) {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    }
+    sel.value = getVoz();
+  }
+  const keyInput = document.getElementById('cfgKey');
+  if (keyInput) keyInput.value = getKey();
+  const btnToggle = document.getElementById('settingsToggle');
+  if (btnToggle) btnToggle.addEventListener('click', () => {
+    const p = document.getElementById('configPanel');
+    if (p) p.hidden = !p.hidden;
+  });
+  const btnSalvar = document.getElementById('cfgSalvar');
+  if (btnSalvar) btnSalvar.addEventListener('click', () => {
+    const k = (document.getElementById('cfgKey').value || '').trim();
+    const v = document.getElementById('cfgVoz').value || VOZ_DEFAULT;
+    if (k) localStorage.setItem('openai_tts_key', k);
+    localStorage.setItem('openai_tts_voice', v);
+    cacheTTS.clear();
+    document.getElementById('configPanel').hidden = true;
+  });
+  const btnTestar = document.getElementById('cfgTestar');
+  if (btnTestar) btnTestar.addEventListener('click', () => {
+    const k = (document.getElementById('cfgKey').value || '').trim();
+    const v = document.getElementById('cfgVoz').value || VOZ_DEFAULT;
+    if (k) localStorage.setItem('openai_tts_key', k);
+    localStorage.setItem('openai_tts_voice', v);
+    cacheTTS.clear();
+    narrar('', 'Olá Helena, sou sua nova narradora!');
+  });
+  const btnSom = document.getElementById('soundToggle');
+  if (btnSom) btnSom.addEventListener('click', () => {
+    somAtivo = !somAtivo;
+    btnSom.textContent = somAtivo ? '🔊' : '🔇';
+    if (!somAtivo) pararNarracao();
+  });
+})();
+// === FIM NARRAÇÃO ===
+</script>
+
 <div class="app">
   <header>
     <h1>Ordens e Classes</h1>
@@ -502,11 +666,16 @@
         d.textContent = '0';
         d.classList.add('empty');
       });
+      if (typeof pararNarracao === 'function') pararNarracao();
       return;
     }
 
     fmt.innerHTML = '<strong>' + formatPontos(display) + '</strong>';
-    lx.textContent = lerNumero(display);
+    const leitura = lerNumero(display);
+    lx.textContent = leitura;
+    if (typeof narrarDebounced === 'function') {
+      narrarDebounced(formatPontos(display), leitura);
+    }
 
     const pd = display.padStart(12, '0');
     const nl = display.length;
@@ -548,6 +717,7 @@
 
   ni.value = '12345';
   update('12345');
+  if (typeof pararNarracao === 'function') pararNarracao();
 })();
 </script>
 </body>

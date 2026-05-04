@@ -119,6 +119,18 @@
   .dica { margin-top: 16px; padding: 14px 16px; background: rgba(255, 243, 168, 0.5); border-left: 4px solid var(--gold); border-radius: 6px; color: var(--ink-soft); font-family: "Caveat", cursive; font-size: 1.15rem; }
   .dica::before { content: "💡 "; }
   .sound-toggle { position: fixed; top: 20px; right: 20px; z-index: 50; }
+  .settings-toggle { position: fixed; top: 20px; right: 70px; z-index: 50; }
+  .config-panel { position: fixed; top: 70px; right: 20px; z-index: 60; background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 6px 6px 0 var(--ink); padding: 18px; width: 280px; font-family: "Outfit", sans-serif; }
+  .config-panel[hidden] { display: none; }
+  .config-panel h3 { font-family: "Fraunces", serif; font-weight: 700; font-size: 1.1rem; margin: 0 0 12px; color: var(--ink); }
+  .config-panel label { display: block; font-size: 0.85rem; color: var(--ink-soft); margin-top: 10px; margin-bottom: 4px; }
+  .config-panel input, .config-panel select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 2px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: var(--paper); color: var(--ink); }
+  .config-panel input:focus, .config-panel select:focus { outline: none; border-color: var(--coral); }
+  .config-panel .btn-row { display: flex; gap: 8px; margin-top: 14px; }
+  .config-panel .btn-row button { flex: 1; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper-deep); color: var(--ink); font-family: inherit; font-weight: 600; cursor: pointer; box-shadow: 2px 2px 0 var(--ink); }
+  .config-panel .btn-row button.primary { background: var(--coral); color: var(--paper); border-color: var(--coral-deep); }
+  .config-panel .btn-row button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+  .config-panel .hint { font-size: 0.75rem; color: var(--ink-soft); margin-top: 6px; }
   @media (max-width: 600px) {
     .app { padding: 20px 16px 60px; }
     .card { padding: 22px; }
@@ -131,6 +143,20 @@
 <body>
 
 <button id="soundToggle" class="icon-btn sound-toggle" aria-label="Som">🔊</button>
+<button id="settingsToggle" class="icon-btn settings-toggle" aria-label="Configurações de voz">⚙️</button>
+
+<div id="configPanel" class="config-panel" hidden>
+  <h3>Voz da narração</h3>
+  <label for="cfgKey">Chave da OpenAI</label>
+  <input type="password" id="cfgKey" placeholder="sk-..." autocomplete="off" />
+  <div class="hint">Salva só no seu navegador.</div>
+  <label for="cfgVoz">Voz</label>
+  <select id="cfgVoz"></select>
+  <div class="btn-row">
+    <button id="cfgTestar" type="button">Testar</button>
+    <button id="cfgSalvar" type="button" class="primary">Salvar</button>
+  </div>
+</div>
 
 <div class="app">
   <header>
@@ -722,25 +748,18 @@ function lancarConfete() {
 
 let somAtivo = true;
 
-// === NARRAÇÃO (Web Speech API) ===
-let vozEscolhida = null;
-function carregarVozes() {
-  if (!window.speechSynthesis) return;
-  const vozes = speechSynthesis.getVoices();
-  const ptVozes = vozes.filter(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
-  const preferidas = ['Luciana', 'Joana', 'Maria', 'Helena', 'Camila', 'Catarina', 'Vitoria', 'Vitória', 'Google', 'Francisca'];
-  for (const nome of preferidas) {
-    const v = ptVozes.find(voz => voz.name && voz.name.toLowerCase().includes(nome.toLowerCase()));
-    if (v) { vozEscolhida = v; return; }
-  }
-  vozEscolhida = ptVozes.find(v => (v.lang || '').toLowerCase() === 'pt-br') || ptVozes[0] || null;
-}
-if (window.speechSynthesis) {
-  carregarVozes();
-  if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
-    speechSynthesis.onvoiceschanged = carregarVozes;
-  }
-}
+// === NARRAÇÃO (OpenAI TTS - gpt-4o-mini-tts) ===
+const VOZES_OPENAI = ['alloy','ash','ballad','coral','echo','fable','nova','onyx','sage','shimmer','verse'];
+const VOZ_DEFAULT = 'nova';
+let audioEl = null;
+let aborter = null;
+let geracaoNarracao = 0;
+const cacheTTS = new Map();
+let configAbertoUmaVez = false;
+
+function getKey() { return localStorage.getItem('openai_tts_key') || ''; }
+function getVoz() { return localStorage.getItem('openai_tts_voice') || VOZ_DEFAULT; }
+
 function limparParaFala(html) {
   const d = document.createElement('div');
   d.innerHTML = html || '';
@@ -755,24 +774,93 @@ function limparParaFala(html) {
     .trim();
   return texto;
 }
-function narrar(titulo, texto) {
-  if (!somAtivo || !window.speechSynthesis) return;
-  try {
-    speechSynthesis.cancel();
-    const conteudo = (titulo ? titulo + '. ' : '') + limparParaFala(texto || '');
-    if (!conteudo.trim()) return;
-    const u = new SpeechSynthesisUtterance(conteudo);
-    u.lang = 'pt-BR';
-    if (vozEscolhida) u.voice = vozEscolhida;
-    u.rate = 0.95;
-    u.pitch = 1.15;
-    u.volume = 1.0;
-    speechSynthesis.speak(u);
-  } catch (e) {}
+
+function abrirConfigPanel() {
+  const p = document.getElementById('configPanel');
+  if (p) {
+    document.getElementById('cfgKey').value = getKey();
+    document.getElementById('cfgVoz').value = getVoz();
+    p.hidden = false;
+  }
 }
+
+async function narrar(titulo, texto) {
+  if (!somAtivo) return;
+  const conteudo = ((titulo ? titulo + '. ' : '') + limparParaFala(texto || '')).trim();
+  if (!conteudo) return;
+  const key = getKey();
+  if (!key) {
+    if (!configAbertoUmaVez) { configAbertoUmaVez = true; abrirConfigPanel(); }
+    return;
+  }
+  pararNarracao();
+  const meu = ++geracaoNarracao;
+  const voz = getVoz();
+  const cacheKey = voz + '|' + conteudo;
+  let url = cacheTTS.get(cacheKey);
+  if (!url) {
+    aborter = new AbortController();
+    try {
+      const r = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: voz, input: conteudo, response_format: 'mp3' }),
+        signal: aborter.signal,
+      });
+      if (!r.ok) { console.warn('TTS OpenAI', r.status, await r.text().catch(() => '')); return; }
+      const blob = await r.blob();
+      url = URL.createObjectURL(blob);
+      cacheTTS.set(cacheKey, url);
+    } catch (e) { if (e.name !== 'AbortError') console.warn('TTS', e); return; }
+  }
+  if (meu !== geracaoNarracao) return;
+  if (!audioEl) audioEl = new Audio();
+  audioEl.src = url;
+  audioEl.play().catch(() => {});
+}
+
 function pararNarracao() {
-  if (window.speechSynthesis) speechSynthesis.cancel();
+  geracaoNarracao++;
+  if (aborter) { try { aborter.abort(); } catch (e) {} aborter = null; }
+  if (audioEl) { try { audioEl.pause(); audioEl.currentTime = 0; } catch (e) {} }
 }
+
+(function initConfigPanel() {
+  const sel = document.getElementById('cfgVoz');
+  if (sel) {
+    for (const v of VOZES_OPENAI) {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    }
+    sel.value = getVoz();
+  }
+  const keyInput = document.getElementById('cfgKey');
+  if (keyInput) keyInput.value = getKey();
+  const btnToggle = document.getElementById('settingsToggle');
+  if (btnToggle) btnToggle.addEventListener('click', () => {
+    const p = document.getElementById('configPanel');
+    if (p) p.hidden = !p.hidden;
+  });
+  const btnSalvar = document.getElementById('cfgSalvar');
+  if (btnSalvar) btnSalvar.addEventListener('click', () => {
+    const k = (document.getElementById('cfgKey').value || '').trim();
+    const v = document.getElementById('cfgVoz').value || VOZ_DEFAULT;
+    if (k) localStorage.setItem('openai_tts_key', k);
+    localStorage.setItem('openai_tts_voice', v);
+    cacheTTS.clear();
+    document.getElementById('configPanel').hidden = true;
+  });
+  const btnTestar = document.getElementById('cfgTestar');
+  if (btnTestar) btnTestar.addEventListener('click', () => {
+    const k = (document.getElementById('cfgKey').value || '').trim();
+    const v = document.getElementById('cfgVoz').value || VOZ_DEFAULT;
+    if (k) localStorage.setItem('openai_tts_key', k);
+    localStorage.setItem('openai_tts_voice', v);
+    cacheTTS.clear();
+    narrar('', 'Olá Helena, sou sua nova narradora!');
+  });
+})();
 // === FIM NARRAÇÃO ===
 
 let audioCtx = null;
