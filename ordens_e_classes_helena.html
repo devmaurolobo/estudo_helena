@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ordens e Classes — Helena</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fdfaf3;
+    --surface: #ffffff;
+    --ink: #1f2937;
+    --ink-soft: #6b7280;
+    --ink-faint: #9ca3af;
+    --border: #e5e7eb;
+    --accent: #6366f1;
+
+    --bilhoes: #ec4899;
+    --bilhoes-soft: #fce7f3;
+    --bilhoes-ink: #831843;
+
+    --milhoes: #8b5cf6;
+    --milhoes-soft: #ede9fe;
+    --milhoes-ink: #4c1d95;
+
+    --milhares: #10b981;
+    --milhares-soft: #d1fae5;
+    --milhares-ink: #064e3b;
+
+    --unidades: #f59e0b;
+    --unidades-soft: #fef3c7;
+    --unidades-ink: #78350f;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 48px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 880px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-size: clamp(24px, 5vw, 34px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #ec4899, #8b5cf6, #6366f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  header .badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    border: 1px solid var(--border);
+  }
+
+  .input-section label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  #num-input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 2px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--ink);
+    outline: none;
+    transition: all 0.2s;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #num-input:focus {
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  .clear-btn {
+    padding: 0 16px;
+    border: 2px solid var(--border);
+    background: #fff;
+    border-radius: 14px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--ink-faint); color: var(--ink); }
+
+  .formatted {
+    text-align: center;
+    margin-top: 12px;
+    min-height: 28px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .formatted strong {
+    font-size: 22px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .examples {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    justify-content: center;
+  }
+
+  .example-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .example-btn:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    background: #f5f3ff;
+  }
+  .example-btn:active { transform: translateY(0); }
+
+  .quadro {
+    background: linear-gradient(135deg, #fafafa, #f4f4f5);
+    border-radius: 18px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .classes-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .classe-header {
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    line-height: 1.2;
+  }
+  .classe-header span {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-top: 2px;
+    letter-spacing: 0.4px;
+  }
+
+  .classe-bilhoes  { background: var(--bilhoes-soft); color: var(--bilhoes-ink); }
+  .classe-milhoes  { background: var(--milhoes-soft); color: var(--milhoes-ink); }
+  .classe-milhares { background: var(--milhares-soft); color: var(--milhares-ink); }
+  .classe-unidades { background: var(--unidades-soft); color: var(--unidades-ink); }
+
+  .ordens-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .classe-cells {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .ordem-cell {
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 2px 10px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .ordem-num {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    line-height: 1;
+  }
+  .ordem-letra {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 4px 0 4px;
+    letter-spacing: 0.4px;
+  }
+  .ordem-digito {
+    font-size: clamp(20px, 4vw, 28px);
+    font-weight: 700;
+    color: var(--ink);
+    height: 32px;
+    line-height: 32px;
+    font-variant-numeric: tabular-nums;
+    transition: all 0.25s;
+  }
+  .ordem-digito.empty {
+    color: var(--ink-faint);
+    opacity: 0.25;
+  }
+
+  .ordem-cell.active.bilhoes-cell {
+    background: var(--bilhoes-soft);
+    border-color: var(--bilhoes);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+  }
+  .ordem-cell.active.milhoes-cell {
+    background: var(--milhoes-soft);
+    border-color: var(--milhoes);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  }
+  .ordem-cell.active.milhares-cell {
+    background: var(--milhares-soft);
+    border-color: var(--milhares);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+  .ordem-cell.active.unidades-cell {
+    background: var(--unidades-soft);
+    border-color: var(--unidades);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  }
+
+  .ordem-cell.active.bilhoes-cell  .ordem-digito { color: var(--bilhoes-ink); }
+  .ordem-cell.active.milhoes-cell  .ordem-digito { color: var(--milhoes-ink); }
+  .ordem-cell.active.milhares-cell .ordem-digito { color: var(--milhares-ink); }
+  .ordem-cell.active.unidades-cell .ordem-digito { color: var(--unidades-ink); }
+
+  .leitura {
+    background: linear-gradient(135deg, #ede9fe, #fce7f3);
+    border-radius: 18px;
+    padding: 18px 22px;
+    border: 1px solid #e9d5ff;
+  }
+  .leitura-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--milhoes-ink);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .leitura-label::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--milhoes);
+    border-radius: 50%;
+  }
+  .leitura-texto {
+    font-size: clamp(16px, 3vw, 19px);
+    line-height: 1.55;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .dica {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #fff7ed;
+    border-left: 4px solid var(--unidades);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--unidades-ink);
+    line-height: 1.55;
+  }
+  .dica strong { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .quadro { padding: 10px; }
+    .classes-row, .ordens-row { gap: 4px; }
+    .classe-cells { gap: 3px; }
+    .ordem-cell { padding: 6px 1px 8px; }
+    .ordem-num { font-size: 9px; }
+    .ordem-letra { font-size: 10px; margin: 3px 0; }
+    .classe-header { font-size: 10px; padding: 8px 2px; }
+    .classe-header span { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Ordens e Classes</h1>
+    <p>Para a Helena entender números bem grandes</p>
+    <div class="badge">5º ano · Capítulo 1</div>
+  </header>
+
+  <div class="card input-section">
+    <label for="num-input">Digite qualquer número (até 12 algarismos):</label>
+    <div class="input-row">
+      <input id="num-input" type="text" inputmode="numeric" placeholder="Ex: 1234567" maxlength="12" autocomplete="off" />
+      <button class="clear-btn" id="clear-btn" type="button">Limpar</button>
+    </div>
+    <div class="formatted" id="formatted"></div>
+
+    <div class="examples">
+      <button class="example-btn" data-n="1234">1.234</button>
+      <button class="example-btn" data-n="98765">98.765</button>
+      <button class="example-btn" data-n="500000">500.000</button>
+      <button class="example-btn" data-n="3500000">3,5 milhões</button>
+      <button class="example-btn" data-n="212583000">População do Brasil</button>
+      <button class="example-btn" data-n="8200000000">População do mundo</button>
+      <button class="example-btn" data-n="100000000000">100 bilhões</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="quadro">
+      <div class="classes-row">
+        <div class="classe-header classe-bilhoes">Bilhões<span>Classe 4</span></div>
+        <div class="classe-header classe-milhoes">Milhões<span>Classe 3</span></div>
+        <div class="classe-header classe-milhares">Milhares<span>Classe 2</span></div>
+        <div class="classe-header classe-unidades">Unidades<span>Classe 1</span></div>
+      </div>
+      <div class="ordens-row">
+        <div class="classe-cells">
+          <div class="ordem-cell bilhoes-cell" data-p="11"><div class="ordem-num">12ª</div><div class="ordem-letra">C</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell bilhoes-cell" data-p="10"><div class="ordem-num">11ª</div><div class="ordem-letra">D</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell bilhoes-cell" data-p="9"><div class="ordem-num">10ª</div><div class="ordem-letra">U</div><div class="ordem-digito empty">0</div></div>
+        </div>
+        <div class="classe-cells">
+          <div class="ordem-cell milhoes-cell" data-p="8"><div class="ordem-num">9ª</div><div class="ordem-letra">C</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell milhoes-cell" data-p="7"><div class="ordem-num">8ª</div><div class="ordem-letra">D</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell milhoes-cell" data-p="6"><div class="ordem-num">7ª</div><div class="ordem-letra">U</div><div class="ordem-digito empty">0</div></div>
+        </div>
+        <div class="classe-cells">
+          <div class="ordem-cell milhares-cell" data-p="5"><div class="ordem-num">6ª</div><div class="ordem-letra">C</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell milhares-cell" data-p="4"><div class="ordem-num">5ª</div><div class="ordem-letra">D</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell milhares-cell" data-p="3"><div class="ordem-num">4ª</div><div class="ordem-letra">U</div><div class="ordem-digito empty">0</div></div>
+        </div>
+        <div class="classe-cells">
+          <div class="ordem-cell unidades-cell" data-p="2"><div class="ordem-num">3ª</div><div class="ordem-letra">C</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell unidades-cell" data-p="1"><div class="ordem-num">2ª</div><div class="ordem-letra">D</div><div class="ordem-digito empty">0</div></div>
+          <div class="ordem-cell unidades-cell" data-p="0"><div class="ordem-num">1ª</div><div class="ordem-letra">U</div><div class="ordem-digito empty">0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dica">
+      <strong>C = Centena</strong> · <strong>D = Dezena</strong> · <strong>U = Unidade</strong> · Cada classe tem 3 ordens, e a gente lê da esquerda para a direita.
+    </div>
+  </div>
+
+  <div class="card leitura">
+    <div class="leitura-label">Lê-se</div>
+    <div class="leitura-texto" id="leitura-texto">Digite um número para ver como ele se lê.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ni = document.getElementById('num-input');
+  const fmt = document.getElementById('formatted');
+  const lx = document.getElementById('leitura-texto');
+  const clearBtn = document.getElementById('clear-btn');
+  const cells = document.querySelectorAll('.ordem-cell');
+  const btns = document.querySelectorAll('.example-btn');
+
+  const U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+  const T = ['dez', 'onze', 'doze', 'treze', 'catorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+  function lerCentena(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    const c = Math.floor(n / 100);
+    const r = n % 100;
+    const d = Math.floor(r / 10);
+    const u = r % 10;
+    const p = [];
+    if (c > 0) p.push(C[c]);
+    if (r > 0) {
+      if (d === 1) p.push(T[u]);
+      else if (d > 1) {
+        let s = D[d];
+        if (u > 0) s += ' e ' + U[u];
+        p.push(s);
+      } else p.push(U[u]);
+    }
+    return p.join(' e ');
+  }
+
+  function lerNumero(s) {
+    if (!s || /^0+$/.test(s)) return 'zero';
+    const pd = s.padStart(12, '0');
+    const g = [
+      parseInt(pd.substring(0, 3), 10),
+      parseInt(pd.substring(3, 6), 10),
+      parseInt(pd.substring(6, 9), 10),
+      parseInt(pd.substring(9, 12), 10)
+    ];
+    const parts = [];
+    for (let i = 0; i < 4; i++) {
+      if (g[i] > 0) {
+        let x;
+        if (i === 0) x = g[i] === 1 ? 'um bilhão' : lerCentena(g[i]) + ' bilhões';
+        else if (i === 1) x = g[i] === 1 ? 'um milhão' : lerCentena(g[i]) + ' milhões';
+        else if (i === 2) x = g[i] === 1 ? 'mil' : lerCentena(g[i]) + ' mil';
+        else x = lerCentena(g[i]);
+        parts.push(x);
+      }
+    }
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) {
+      let lv = 0;
+      for (let j = 3; j >= 0; j--) if (g[j] > 0) { lv = g[j]; break; }
+      if (lv < 100 || lv % 100 === 0) return parts[0] + ' e ' + parts[1];
+    }
+    return parts.join(', ');
+  }
+
+  function formatPontos(s) {
+    return s ? s.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+  }
+
+  function update(s) {
+    s = (s || '').replace(/\D/g, '');
+    if (s.length > 12) s = s.substring(0, 12);
+    const display = s.replace(/^0+/, '') || (s ? '0' : '');
+
+    if (!s) {
+      fmt.innerHTML = '';
+      lx.textContent = 'Digite um número para ver como ele se lê.';
+      cells.forEach(c => {
+        c.classList.remove('active');
+        const d = c.querySelector('.ordem-digito');
+        d.textContent = '0';
+        d.classList.add('empty');
+      });
+      return;
+    }
+
+    fmt.innerHTML = '<strong>' + formatPontos(display) + '</strong>';
+    lx.textContent = lerNumero(display);
+
+    const pd = display.padStart(12, '0');
+    const nl = display.length;
+
+    cells.forEach(c => {
+      const p = parseInt(c.dataset.p, 10);
+      const idx = 11 - p;
+      const d = c.querySelector('.ordem-digito');
+      d.textContent = pd[idx];
+      if (p < nl) {
+        c.classList.add('active');
+        d.classList.remove('empty');
+      } else {
+        c.classList.remove('active');
+        d.classList.add('empty');
+      }
+    });
+  }
+
+  ni.addEventListener('input', e => {
+    const c = e.target.value.replace(/\D/g, '').substring(0, 12);
+    if (e.target.value !== c) e.target.value = c;
+    update(c);
+  });
+
+  btns.forEach(b => {
+    b.addEventListener('click', () => {
+      ni.value = b.dataset.n;
+      update(b.dataset.n);
+      ni.focus();
+    });
+  });
+
+  clearBtn.addEventListener('click', () => {
+    ni.value = '';
+    update('');
+    ni.focus();
+  });
+
+  ni.value = '12345';
+  update('12345');
+})();
+</script>
+</body>
+</html>
