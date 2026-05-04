@@ -621,6 +621,7 @@ function renderPasso() {
   const btnProx = document.getElementById('btnProximo');
   btnProx.textContent = (estadoApp.passoAtual === total - 1) ? 'Ver resultado 🎉' : 'Próximo passo →';
   tocarClique();
+  narrar(passo.titulo, passo.texto);
 }
 
 function proximoPasso() {
@@ -647,6 +648,7 @@ function mostrarFinal() {
   showScreen('final');
   lancarConfete();
   tocarSucesso();
+  narrar('Conseguiu!', estadoApp.a + ' vezes ' + estadoApp.b + ' é igual a ' + ultimo.resultadoFinal + '!');
 }
 
 // =====================================================
@@ -719,6 +721,60 @@ function lancarConfete() {
 }
 
 let somAtivo = true;
+
+// === NARRAÇÃO (Web Speech API) ===
+let vozEscolhida = null;
+function carregarVozes() {
+  if (!window.speechSynthesis) return;
+  const vozes = speechSynthesis.getVoices();
+  const ptVozes = vozes.filter(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+  const preferidas = ['Luciana', 'Joana', 'Maria', 'Helena', 'Camila', 'Catarina', 'Vitoria', 'Vitória', 'Google', 'Francisca'];
+  for (const nome of preferidas) {
+    const v = ptVozes.find(voz => voz.name && voz.name.toLowerCase().includes(nome.toLowerCase()));
+    if (v) { vozEscolhida = v; return; }
+  }
+  vozEscolhida = ptVozes.find(v => (v.lang || '').toLowerCase() === 'pt-br') || ptVozes[0] || null;
+}
+if (window.speechSynthesis) {
+  carregarVozes();
+  if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+    speechSynthesis.onvoiceschanged = carregarVozes;
+  }
+}
+function limparParaFala(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html || '';
+  let texto = d.textContent || d.innerText || '';
+  texto = texto
+    .replace(/÷/g, ' dividido por ')
+    .replace(/×/g, ' vezes ')
+    .replace(/−/g, ' menos ')
+    .replace(/\+/g, ' mais ')
+    .replace(/=/g, ' é igual a ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return texto;
+}
+function narrar(titulo, texto) {
+  if (!somAtivo || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const conteudo = (titulo ? titulo + '. ' : '') + limparParaFala(texto || '');
+    if (!conteudo.trim()) return;
+    const u = new SpeechSynthesisUtterance(conteudo);
+    u.lang = 'pt-BR';
+    if (vozEscolhida) u.voice = vozEscolhida;
+    u.rate = 0.95;
+    u.pitch = 1.15;
+    u.volume = 1.0;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function pararNarracao() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+// === FIM NARRAÇÃO ===
+
 let audioCtx = null;
 function getAudio() {
   if (!audioCtx) {
@@ -789,12 +845,12 @@ document.getElementById('btnIniciarManual').addEventListener('click', () => {
 });
 document.getElementById('btnProximo').addEventListener('click', proximoPasso);
 document.getElementById('btnAnterior').addEventListener('click', passoAnterior);
-document.getElementById('btnVoltar').addEventListener('click', () => showScreen('start'));
+document.getElementById('btnVoltar').addEventListener('click', () => { pararNarracao(); showScreen('start'); });
 document.getElementById('btnRecomecar').addEventListener('click', () => {
   estadoApp.passoAtual = 0;
   renderPasso();
 });
-document.getElementById('btnNovaConta').addEventListener('click', () => showScreen('start'));
+document.getElementById('btnNovaConta').addEventListener('click', () => { pararNarracao(); showScreen('start'); });
 document.getElementById('btnRevisar').addEventListener('click', () => {
   estadoApp.passoAtual = 0;
   showScreen('resolve');
@@ -803,6 +859,7 @@ document.getElementById('btnRevisar').addEventListener('click', () => {
 document.getElementById('soundToggle').addEventListener('click', () => {
   somAtivo = !somAtivo;
   document.getElementById('soundToggle').textContent = somAtivo ? '🔊' : '🔇';
+  if (!somAtivo) pararNarracao();
 });
 document.addEventListener('keydown', (e) => {
   if (screens.resolve.classList.contains('active')) {
