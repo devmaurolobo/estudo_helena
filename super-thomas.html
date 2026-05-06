@@ -38,8 +38,6 @@
 
   .stage {
     position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0;
   }
 
   /* ===== Canvas ===== */
@@ -47,8 +45,6 @@
     display: block;
     width: 100%;
     height: 100%;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
   }
 
   /* ===== Telas (overlays) ===== */
@@ -320,27 +316,45 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Mundo lógico (16:9). Tudo é desenhado nessas coordenadas; o CSS escala visual.
-const W = 800;   // largura lógica
-const H = 450;   // altura lógica
+// Mundo lógico — H fixo, W adapta ao aspect-ratio real da tela.
+let W = 800;             // largura lógica visível (varia)
+const H = 450;           // altura lógica de referência (FIXA)
+const MIN_VISIBLE_W = 640; // largura lógica mínima garantida (em telas estreitas)
+let viewScale = 1;       // pixels reais por unidade lógica
+let viewOffsetY = 0;     // deslocamento Y pra centralizar mundo na viewport
+let viewH = H;           // altura lógica visível (>= H em portrait estreito)
 
 function resizeCanvas() {
-  // Mantém aspect-ratio 16:9 ocupando o máximo da tela
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const screenW = window.innerWidth;
   const screenH = window.innerHeight;
-  const ratio = W / H;
-  let cssW = screenW;
-  let cssH = cssW / ratio;
-  if (cssH > screenH) {
-    cssH = screenH;
-    cssW = cssH * ratio;
-  }
-  canvas.style.width = cssW + 'px';
-  canvas.style.height = cssH + 'px';
-  canvas.width = Math.round(W * dpr);
-  canvas.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Canvas preenche a viewport inteira
+  canvas.style.width = screenW + 'px';
+  canvas.style.height = screenH + 'px';
+  canvas.width = Math.round(screenW * dpr);
+  canvas.height = Math.round(screenH * dpr);
+
+  // Escala uniforme: a menor entre "preencher H" e "preencher MIN_VISIBLE_W"
+  // Em landscape (tela larga): scale baseado em H — vê tudo na largura
+  // Em portrait (tela alta): scale baseado em MIN_VISIBLE_W — garante espaço pra reagir
+  const scaleByH = screenH / H;
+  const scaleByMinW = screenW / MIN_VISIBLE_W;
+  viewScale = Math.min(scaleByH, scaleByMinW);
+
+  // Largura lógica visível
+  W = screenW / viewScale;
+  // Altura lógica visível (pode ser maior que H em portrait — vai sobrar céu acima)
+  viewH = screenH / viewScale;
+  // Centraliza o mundo (H lógico) verticalmente — em portrait, sobra céu em cima
+  viewOffsetY = (viewH - H) / 2;
+
+  // Transform: 1 unidade lógica = viewScale*dpr pixels reais; com offset Y pra centralizar
+  ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, 0, viewOffsetY * viewScale * dpr);
+
+  // Player x adaptado proporcionalmente
+  PLAYER_X = Math.max(80, Math.min(180, W * 0.18));
+  if (state && state.player) state.player.x = PLAYER_X;
 }
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
@@ -407,7 +421,7 @@ function lancarConfete(qtd = 40) {
 // CONSTANTES DO JOGO
 // ============================================================
 const GROUND_TOP = 360;          // y do topo da grama
-const PLAYER_X   = 130;          // x fixo do player
+let PLAYER_X     = 130;          // x do player (recalculado em resizeCanvas)
 const PLAYER_W   = 46;
 const PLAYER_H   = 56;
 
@@ -689,43 +703,50 @@ function sofrerDano() {
 // RENDER
 // ============================================================
 function render() {
-  // Céu (gradient já é body bg, mas pinto pra evitar artefatos)
-  const grad = ctx.createLinearGradient(0, 0, 0, GROUND_TOP);
+  // Limites visíveis em coordenadas lógicas (considerando offsetY e largura adaptativa)
+  const skyTop    = -viewOffsetY;                  // topo visível (pode ser negativo)
+  const sceneBot  = viewH - viewOffsetY;           // bottom visível
+
+  // Céu (gradient cobrindo do topo visível até o chão)
+  const grad = ctx.createLinearGradient(0, skyTop, 0, GROUND_TOP);
   grad.addColorStop(0, '#cae9f0');
   grad.addColorStop(1, '#5fa8d3');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, GROUND_TOP);
+  ctx.fillRect(0, skyTop, W, GROUND_TOP - skyTop);
 
-  // Sol
+  // Sol — posição relativa ao topo visível pra ficar bonito em portrait também
+  const sunX = W - 100;
+  const sunY = skyTop + 80;
   ctx.save();
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = '#fff3a8';
-  ctx.beginPath(); ctx.arc(W - 100, 80, 38, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(sunX, sunY, 38, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(255, 211, 0, 0.5)';
-  ctx.beginPath(); ctx.arc(W - 100, 80, 52, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(sunX, sunY, 52, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
   // Nuvens fundo
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  for (const c of state.cloudsBack) drawCloud(c.x, c.y, c.s * 0.9);
+  for (const c of state.cloudsBack) drawCloud(c.x, c.y + skyTop, c.s * 0.9);
   ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  for (const c of state.cloudsFront) drawCloud(c.x, c.y, c.s);
+  for (const c of state.cloudsFront) drawCloud(c.x, c.y + skyTop * 0.5, c.s);
 
   // Árvores (parallax médio)
   for (const t of state.trees) drawTree(t.x, GROUND_TOP, t.scale);
 
-  // CHÃO: grama + terra
+  // CHÃO: grama + terra (estende até o bottom visível em portrait)
   ctx.fillStyle = '#7ec850';
   ctx.fillRect(0, GROUND_TOP, W, 14);
   ctx.fillStyle = '#5ea838';
   ctx.fillRect(0, GROUND_TOP + 14, W, 4);
   ctx.fillStyle = '#b07a3e';
-  ctx.fillRect(0, GROUND_TOP + 18, W, H - GROUND_TOP);
+  ctx.fillRect(0, GROUND_TOP + 18, W, sceneBot - (GROUND_TOP + 18));
   // textura da terra (pontinhos)
   ctx.fillStyle = '#7c5026';
-  for (let i = 0; i < 60; i++) {
+  const dirtMaxY = Math.min(sceneBot, GROUND_TOP + 200);
+  for (let i = 0; i < 80; i++) {
     const x = (i * 73 + state.distance * -0.5) % W;
-    const y = GROUND_TOP + 30 + ((i * 23) % 50);
+    const y = GROUND_TOP + 30 + ((i * 23) % (dirtMaxY - GROUND_TOP - 30));
     ctx.fillRect(((x % W) + W) % W, y, 3, 3);
   }
 
