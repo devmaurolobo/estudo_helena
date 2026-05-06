@@ -315,15 +315,16 @@ function groundY()    { return CH * 0.78; }                    // y do topo da g
 function playerSize() { return Math.max(34, Math.min(64, CH * 0.10)); }
 function playerX()    { return Math.max(70, Math.min(180, CW * 0.18)); }
 function obstacleH()  { return Math.max(34, Math.min(70, CH * 0.10)); }
+function obstacleW()  { return Math.max(28, Math.min(50, CW * 0.06)); }  // mais fina pra ser jumpable em portrait
 
-// Pulo / gravidade — calibrados pra altura proporcional ao chão
-function gravity()       { return CH * 0.0010; }   // queda suave
-function jumpVel()       { return -CH * 0.022; }   // pulo médio
-function jumpHoldForce() { return -CH * 0.0010; }  // efeito de segurar
-function speedInit()     { return CW * 0.0035; }   // velocidade inicial baixinha
-function speedCap()      { return CW * 0.0080; }   // teto de velocidade mais baixo
-function speedGain()     { return CW * 0.0000004; } // acelera bem devagar
-function spawnGapMin()   { return CW * 0.80; }     // mais espaço entre obstáculos
+// Pulo / gravidade — calibrados pra cobrir caixa + sair com folga (cair na frente)
+function gravity()       { return CH * 0.00070; }  // queda flutuante = mais tempo no ar
+function jumpVel()       { return -CH * 0.020; }   // pulo médio
+function jumpHoldForce() { return -CH * 0.0007; }  // segurar dá boost
+function speedInit()     { return CW * 0.0035; }   // velocidade inicial baixa
+function speedCap()      { return CW * 0.0080; }   // teto baixo
+function speedGain()     { return CW * 0.0000004; } // acelera devagar
+function spawnGapMin()   { return CW * 0.80; }     // bastante espaço entre obstáculos
 
 const JUMP_HOLD_MAX = 14;
 const LIVES_INIT    = 5;
@@ -467,17 +468,18 @@ function spawnar() {
   const r = Math.random();
   const baseX = CW + 60;
   const obs = obstacleH();
+  const obw = obstacleW();
   const gy = groundY();
 
   if (r < 0.25) {
     // caixa baixa fácil de pular
-    state.obstacles.push({ x: baseX, y: gy - obs, w: obs * 1.0, h: obs, type: 'box' });
+    state.obstacles.push({ x: baseX, y: gy - obs, w: obw, h: obs, type: 'box' });
   } else if (r < 0.40) {
     // cacto baixo
-    state.obstacles.push({ x: baseX, y: gy - obs, w: obs * 0.85, h: obs, type: 'cactus' });
+    state.obstacles.push({ x: baseX, y: gy - obs, w: obw * 0.85, h: obs, type: 'cactus' });
   } else if (r < 0.55) {
     // inimigo (sempre Goomba, mais fácil de identificar pra criança)
-    state.enemies.push({ x: baseX, y: gy - obs * 0.95, w: obs * 0.95, h: obs * 0.95, type: 'goomba', vy: 0, alive: true, walk: 0 });
+    state.enemies.push({ x: baseX, y: gy - obs * 0.95, w: obw * 0.95, h: obs * 0.95, type: 'goomba', vy: 0, alive: true, walk: 0 });
   } else {
     const qtd = 3 + Math.floor(Math.random() * 3);
     const startY = gy - obs * 2.6;
@@ -591,8 +593,10 @@ function rectOverlap(a, b) {
 function colisoes() {
   const p = state.player;
   if (!p) return;
-  const pad = p.w * 0.1;
-  const pBox = { x: p.x + pad, y: p.y + pad, w: p.w - pad * 2, h: p.h - pad * 2 };
+  // Hitbox mais "perdoadora" lateralmente pra criança não morrer só por raspar
+  const padX = p.w * 0.20;
+  const padY = p.h * 0.08;
+  const pBox = { x: p.x + padX, y: p.y + padY, w: p.w - padX * 2, h: p.h - padY * 2 };
 
   // estrelas
   for (let i = 0; i < state.stars.length; i++) {
