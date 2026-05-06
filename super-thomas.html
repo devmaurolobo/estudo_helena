@@ -217,7 +217,7 @@
 
 <div id="hud">
   <div class="hud-side">
-    <div class="chip" id="hudLives">💖💖💖</div>
+    <div class="chip" id="hudLives">💖💖💖💖💖</div>
     <div class="chip">⭐ <span class="v" id="hudStars">0</span></div>
   </div>
   <div class="hud-side">
@@ -317,15 +317,16 @@ function playerX()    { return Math.max(70, Math.min(180, CW * 0.18)); }
 function obstacleH()  { return Math.max(34, Math.min(70, CH * 0.10)); }
 
 // Pulo / gravidade — calibrados pra altura proporcional ao chão
-function gravity()       { return CH * 0.0010; }   // queda mais suave
-function jumpVel()       { return -CH * 0.020; }   // pulo mais baixo
-function jumpHoldForce() { return -CH * 0.0009; }  // efeito de segurar mais leve
-function speedInit()     { return CW * 0.0055; }   // ex: 400*0.0055 = ~2.2
-function speedCap()      { return CW * 0.012; }
-function speedGain()     { return CW * 0.0000008; }
-function spawnGapMin()   { return CW * 0.55; }
+function gravity()       { return CH * 0.0010; }   // queda suave
+function jumpVel()       { return -CH * 0.022; }   // pulo médio
+function jumpHoldForce() { return -CH * 0.0010; }  // efeito de segurar
+function speedInit()     { return CW * 0.0035; }   // velocidade inicial baixinha
+function speedCap()      { return CW * 0.0080; }   // teto de velocidade mais baixo
+function speedGain()     { return CW * 0.0000004; } // acelera bem devagar
+function spawnGapMin()   { return CW * 0.80; }     // mais espaço entre obstáculos
 
 const JUMP_HOLD_MAX = 14;
+const LIVES_INIT    = 5;
 
 // =============================================================
 // AUDIO
@@ -422,7 +423,7 @@ function novoPlayer() {
     jumping: false,
     holdFrames: 0,
     invuln: 0,
-    lives: 3,
+    lives: LIVES_INIT,
     runFrame: 0,
   };
 }
@@ -468,15 +469,15 @@ function spawnar() {
   const obs = obstacleH();
   const gy = groundY();
 
-  if (r < 0.30) {
+  if (r < 0.25) {
+    // caixa baixa fácil de pular
     state.obstacles.push({ x: baseX, y: gy - obs, w: obs * 1.0, h: obs, type: 'box' });
-  } else if (r < 0.45) {
-    state.obstacles.push({ x: baseX, y: gy - obs * 1.9, w: obs * 1.0, h: obs * 1.9, type: 'tall' });
-  } else if (r < 0.60) {
+  } else if (r < 0.40) {
+    // cacto baixo
     state.obstacles.push({ x: baseX, y: gy - obs, w: obs * 0.85, h: obs, type: 'cactus' });
-  } else if (r < 0.80) {
-    const tipo = Math.random() < 0.7 ? 'goomba' : 'koopa';
-    state.enemies.push({ x: baseX, y: gy - obs * 0.95, w: obs * 0.95, h: obs * 0.95, type: tipo, vy: 0, alive: true, walk: 0 });
+  } else if (r < 0.55) {
+    // inimigo (sempre Goomba, mais fácil de identificar pra criança)
+    state.enemies.push({ x: baseX, y: gy - obs * 0.95, w: obs * 0.95, h: obs * 0.95, type: 'goomba', vy: 0, alive: true, walk: 0 });
   } else {
     const qtd = 3 + Math.floor(Math.random() * 3);
     const startY = gy - obs * 2.6;
@@ -540,7 +541,7 @@ function update() {
   for (let i = 0; i < state.obstacles.length; i++) state.obstacles[i].x -= state.speed;
   for (let i = 0; i < state.enemies.length; i++) {
     const e = state.enemies[i];
-    if (e.alive) { e.x -= state.speed + 0.6; e.walk += 0.18; }
+    if (e.alive) { e.x -= state.speed; e.walk += 0.18; } // anda na velocidade do mundo (não vem mais rápido)
     else { e.x -= state.speed * 0.8; e.vy += gravity(); e.y += e.vy; }
   }
   for (let i = 0; i < state.stars.length; i++) {
@@ -954,7 +955,7 @@ function roundRect(x, y, w, h, r) {
 function atualizarHUD() {
   const p = state.player;
   if (!p) return;
-  const heart = '💖'.repeat(Math.max(0, p.lives)) + '🖤'.repeat(Math.max(0, 3 - p.lives));
+  const heart = '💖'.repeat(Math.max(0, p.lives)) + '🖤'.repeat(Math.max(0, LIVES_INIT - p.lives));
   document.getElementById('hudLives').textContent = heart;
   document.getElementById('hudStars').textContent = state.starsCount;
   document.getElementById('hudDist').textContent = Math.floor(state.distance / 6);
