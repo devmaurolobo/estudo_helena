@@ -317,9 +317,9 @@ function playerX()    { return Math.max(70, Math.min(180, CW * 0.18)); }
 function obstacleH()  { return Math.max(34, Math.min(70, CH * 0.10)); }
 
 // Pulo / gravidade — calibrados pra altura proporcional ao chão
-function gravity()       { return CH * 0.0014; }   // ex: 720*0.0014 = ~1
-function jumpVel()       { return -CH * 0.027; }   // ex: 720*0.027 = ~19
-function jumpHoldForce() { return -CH * 0.0013; }
+function gravity()       { return CH * 0.0010; }   // queda mais suave
+function jumpVel()       { return -CH * 0.020; }   // pulo mais baixo
+function jumpHoldForce() { return -CH * 0.0009; }  // efeito de segurar mais leve
 function speedInit()     { return CW * 0.0055; }   // ex: 400*0.0055 = ~2.2
 function speedCap()      { return CW * 0.012; }
 function speedGain()     { return CW * 0.0000008; }
