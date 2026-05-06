@@ -352,9 +352,10 @@ function resizeCanvas() {
   // Transform: 1 unidade lógica = viewScale*dpr pixels reais; com offset Y pra centralizar
   ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, 0, viewOffsetY * viewScale * dpr);
 
-  // Player x adaptado proporcionalmente
+  // Player x adaptado proporcionalmente (atualiza só em jogos novos —
+  // não mexe no player existente pra evitar acessar `state` antes de
+  // estar inicializado na primeira chamada)
   PLAYER_X = Math.max(80, Math.min(180, W * 0.18));
-  if (state && state.player) state.player.x = PLAYER_X;
 }
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
@@ -881,6 +882,7 @@ function drawEnemy(e) {
 
 function drawPlayer() {
   const p = state.player;
+  if (!p) return; // ainda não iniciou o jogo
   // flicker quando invulnerável
   if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2 === 0) {
     // pula renderização pra criar efeito blink
