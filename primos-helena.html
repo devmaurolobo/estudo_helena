@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0EA5E9">
+<title>Aventura Matemática - Números Primos & Divisibilidade</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --primary: #0EA5E9;
+  --primary-dark: #0284C7;
+  --secondary: #F97316;
+  --accent: #A855F7;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --pink: #EC4899;
+  --bg: #EFF6FF;
+  --card: #FFFFFF;
+  --text: #1E293B;
+  --text-light: #64748B;
+  --border: #E2E8F0;
+}
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Comic Sans MS', system-ui, sans-serif;
+  background: linear-gradient(180deg, #DBEAFE 0%, #E0F2FE 50%, #CCFBF1 100%);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 90px;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  padding: 18px 16px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(14,165,233,0.25);
+  border-radius: 0 0 24px 24px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  flex: 1;
+}
+
+.back-btn {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+.back-btn:active { transform: scale(0.9); }
+.back-btn.show { display: flex; }
+
+.stars-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.25);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 999px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FBBF24, #F97316);
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+/* MAIN AREA */
+main {
+  padding: 16px;
+}
+
+.screen {
+  display: none;
+  animation: slideIn 0.35s ease;
+}
+.screen.active { display: block; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* HOME SCREEN */
+.welcome {
+  text-align: center;
+  padding: 12px 4px 20px;
+}
+.welcome .mascot {
+  font-size: 64px;
+  animation: bounce 2s infinite ease-in-out;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.welcome h2 {
+  font-size: 22px;
+  color: var(--primary-dark);
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+.welcome p {
+  color: var(--text-light);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 0 8px;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.menu-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 18px 12px;
+  text-align: center;
+  cursor: pointer;
+  border: 3px solid transparent;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.menu-card:active {
+  transform: scale(0.96);
+}
+.menu-card.completed {
+  border-color: var(--success);
+}
+.menu-card.completed::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: var(--success);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.menu-card .icon {
+  font-size: 38px;
+  display: block;
+  margin-bottom: 6px;
+}
+.menu-card .title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.menu-card .subtitle {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.menu-card.c1 { background: linear-gradient(135deg, #FEF3C7, #FDE68A); }
+.menu-card.c2 { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); }
+.menu-card.c3 { background: linear-gradient(135deg, #FCE7F3, #FBCFE8); }
+.menu-card.c4 { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
+.menu-card.c5 { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); }
+.menu-card.c6 { background: linear-gradient(135deg, #FFE4E6, #FECDD3); }
+
+/* CONTENT BLOCKS */
+.section-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+}
+
+.card.highlight {
+  background: linear-gradient(135deg, #FFF7ED, #FFEDD5);
+  border-left: 4px solid var(--secondary);
+}
+
+.card.tip {
+  background: linear-gradient(135deg, #ECFEFF, #CFFAFE);
+  border-left: 4px solid var(--primary);
+}
+
+.card.example {
+  background: linear-gradient(135deg, #F5F3FF, #EDE9FE);
+  border-left: 4px solid var(--accent);
+}
+
+.card h3 {
+  font-size: 17px;
+  margin-bottom: 8px;
+  color: var(--primary-dark);
+  font-weight: 800;
+}
+
+.card p {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.card p:last-child { margin-bottom: 0; }
+
+.emoji-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.emoji-bullet .e { font-size: 22px; flex-shrink: 0; }
+
+.fun-quote {
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  color: white;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-weight: 700;
+  text-align: center;
+  margin: 14px 0;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+}
+
+/* INTERACTIVE COMPONENTS */
+.number-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  margin: 12px 0;
+}
+.num-cell {
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.num-cell:active { transform: scale(0.9); }
+.num-cell.crossed {
+  background: #FEE2E2;
+  color: #DC2626;
+  text-decoration: line-through;
+  border-color: #FCA5A5;
+}
+.num-cell.circled {
+  background: #DCFCE7;
+  color: #15803D;
+  border-color: #4ADE80;
+  border-width: 3px;
+  font-weight: 800;
+}
+.num-cell.hint-glow {
+  animation: glow 1s infinite alternate;
+}
+@keyframes glow {
+  from { box-shadow: 0 0 4px var(--warning); }
+  to { box-shadow: 0 0 14px var(--warning); }
+}
+
+.btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(14,165,233,0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 6px rgba(14,165,233,0.3); }
+.btn.secondary { background: var(--secondary); box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+.btn.success { background: var(--success); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+.btn.purple { background: var(--accent); box-shadow: 0 4px 12px rgba(168,85,247,0.3); }
+.btn.full { width: 100%; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.input-line {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  background: white;
+  margin: 8px 0;
+}
+.input-line:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* DIVISORS EXPLORER */
+.divisor-explorer {
+  text-align: center;
+}
+.big-number {
+  font-size: 64px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 8px 0;
+  line-height: 1;
+}
+.divisor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 14px 0;
+  min-height: 40px;
+}
+.chip {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 15px;
+  animation: pop 0.4s ease;
+  box-shadow: 0 2px 6px rgba(14,165,233,0.3);
+}
+.chip.shared {
+  background: linear-gradient(135deg, var(--success), #059669);
+  box-shadow: 0 2px 6px rgba(16,185,129,0.3);
+}
+.chip.mdc {
+  background: linear-gradient(135deg, var(--secondary), #EA580C);
+  font-size: 18px;
+  padding: 10px 18px;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+  animation: bounce 0.6s ease 2;
+}
+
+.number-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+.picker-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--secondary);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(249,115,22,0.3);
+}
+.picker-btn:active { transform: scale(0.9); }
+.picker-display {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  min-width: 80px;
+  text-align: center;
+  background: white;
+  border-radius: 14px;
+  padding: 6px 14px;
+  border: 3px solid var(--primary);
+}
+
+/* DIVISIBILITY TESTER */
+.div-rules {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+.rule-card {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.rule-card:active { transform: scale(0.96); }
+.rule-card.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+}
+.rule-card .rn {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--primary-dark);
+}
+.rule-card .rt {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.tester-result {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px;
+  border-radius: 14px;
+  margin-top: 10px;
+  min-height: 48px;
+}
+.tester-result.yes {
+  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  color: #065F46;
+}
+.tester-result.no {
+  background: linear-gradient(135deg, #FEE2E2, #FECACA);
+  color: #991B1B;
+}
+.tester-result.idle {
+  background: var(--bg);
+  color: var(--text-light);
+}
+
+/* QUIZ */
+.quiz-question {
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  color: white;
+  padding: 18px;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  box-shadow: 0 6px 16px rgba(168,85,247,0.3);
+}
+.quiz-question .qn {
+  font-size: 12px;
+  opacity: 0.9;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.quiz-options {
+  display: grid;
+  gap: 10px;
+}
+
+.quiz-opt {
+  background: white;
+  border: 3px solid var(--border);
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+.quiz-opt:active { transform: scale(0.98); }
+.quiz-opt .letter {
+  background: var(--primary);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.quiz-opt.correct {
+  border-color: var(--success);
+  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+}
+.quiz-opt.correct .letter { background: var(--success); }
+.quiz-opt.wrong {
+  border-color: var(--danger);
+  background: linear-gradient(135deg, #FEE2E2, #FECACA);
+  animation: shake 0.4s;
+}
+.quiz-opt.wrong .letter { background: var(--danger); }
+.quiz-opt.disabled { opacity: 0.5; pointer-events: none; }
+
+.feedback {
+  padding: 14px;
+  border-radius: 14px;
+  text-align: center;
+  font-weight: 700;
+  margin-top: 12px;
+  display: none;
+}
+.feedback.show { display: block; animation: pop 0.4s ease; }
+.feedback.right {
+  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  color: #065F46;
+}
+.feedback.wrong {
+  background: linear-gradient(135deg, #FEE2E2, #FECACA);
+  color: #991B1B;
+}
+
+/* CONFETTI */
+.confetti {
+  position: fixed;
+  top: -10px;
+  width: 8px;
+  height: 14px;
+  z-index: 9999;
+  animation: fall linear forwards;
+  pointer-events: none;
+}
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* COMPLETION SCREEN */
+.completion {
+  text-align: center;
+  padding: 40px 20px;
+}
+.completion .trophy {
+  font-size: 100px;
+  display: block;
+  margin: 12px 0;
+  animation: bounce 1.2s infinite;
+}
+.completion h2 {
+  font-size: 28px;
+  background: linear-gradient(135deg, var(--secondary), var(--pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  font-weight: 900;
+}
+.completion p {
+  color: var(--text-light);
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+/* PRIME FACT */
+.prime-fact {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  margin: 10px 0;
+  background: white;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+}
+.prime-fact .num {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  flex-shrink: 0;
+  color: white;
+}
+.prime-fact.is-prime .num { background: linear-gradient(135deg, var(--success), #059669); }
+.prime-fact.not-prime .num { background: linear-gradient(135deg, var(--danger), #DC2626); }
+.prime-fact .info { font-size: 13px; line-height: 1.4; color: var(--text); }
+.prime-fact .info b { color: var(--primary-dark); }
+
+.legend {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-size: 12px;
+  color: var(--text-light);
+}
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend .dot { width: 14px; height: 14px; border-radius: 4px; }
+
+.section-divider {
+  text-align: center;
+  margin: 20px 0 12px;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.section-divider::before, .section-divider::after {
+  content: '✦';
+  margin: 0 10px;
+}
+
+/* TINY scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+
+/* Range / slider style */
+.kid-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+.kid-input input {
+  flex: 1;
+  max-width: 140px;
+  padding: 10px 12px;
+  border: 3px solid var(--primary);
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  background: white;
+  color: var(--primary-dark);
+}
+.kid-input input:focus { outline: none; border-color: var(--accent); }
+
+.divisibility-rule-detail {
+  display: none;
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  border-left: 4px solid var(--warning);
+}
+.divisibility-rule-detail.show { display: block; animation: pop 0.3s ease; }
+.divisibility-rule-detail b { color: #92400E; }
+.divisibility-rule-detail .ex {
+  background: white;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* group dragging visual */
+.group-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+.group-row {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+}
+.group-row.active { border-color: var(--success); background: linear-gradient(135deg, #ECFDF5, #D1FAE5); }
+.group-row .gtitle { font-size: 13px; font-weight: 700; color: var(--text-light); margin-bottom: 6px; }
+.kids-line { display: flex; flex-wrap: wrap; gap: 4px; }
+.kid {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.kid.boy { background: #DBEAFE; }
+.kid.girl { background: #FCE7F3; }
+
+.group-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  justify-content: center;
+}
+.group-options button {
+  background: white;
+  border: 2px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+}
+.group-options button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.bottom-tip {
+  font-size: 12px;
+  color: var(--text-light);
+  text-align: center;
+  margin-top: 10px;
+  padding: 0 10px;
+  line-height: 1.4;
+}
+
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  bottom: 110px;
+}
+
+footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-light);
+  font-size: 11px;
+}
+
+@media (max-width: 360px) {
+  .num-cell { font-size: 9px; }
+  .menu-card .title { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-row">
+      <button class="back-btn" id="backBtn" onclick="goHome()">←</button>
+      <h1 id="pageTitle">🚀 Aventura Matemática</h1>
+      <div class="stars-bar">⭐ <span id="starCount">0</span></div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ============ HOME ============ -->
+    <section class="screen active" id="screen-home">
+      <div class="welcome">
+        <span class="mascot">🦊</span>
+        <h2>Olá, exploradora!</h2>
+        <p>Vamos descobrir os segredos dos números primos, divisores e divisibilidade. Toque numa missão para começar!</p>
+      </div>
+      <div class="menu-grid">
+        <div class="menu-card c1" id="card-1" onclick="goTo('div')">
+          <span class="icon">🍎</span>
+          <div class="title">Divisores</div>
+          <div class="subtitle">O que é dividir certinho?</div>
+        </div>
+        <div class="menu-card c2" id="card-2" onclick="goTo('comuns')">
+          <span class="icon">👫</span>
+          <div class="title">Divisores Comuns</div>
+          <div class="subtitle">Formando grupos</div>
+        </div>
+        <div class="menu-card c3" id="card-3" onclick="goTo('mdc')">
+          <span class="icon">🏆</span>
+          <div class="title">MDC</div>
+          <div class="subtitle">O maior divisor</div>
+        </div>
+        <div class="menu-card c4" id="card-4" onclick="goTo('primos')">
+          <span class="icon">💎</span>
+          <div class="title">Primos & Compostos</div>
+          <div class="subtitle">Números especiais</div>
+        </div>
+        <div class="menu-card c5" id="card-5" onclick="goTo('crivo')">
+          <span class="icon">🔍</span>
+          <div class="title">Crivo do Eratóstenes</div>
+          <div class="subtitle">Caça aos primos</div>
+        </div>
+        <div class="menu-card c6" id="card-6" onclick="goTo('regras')">
+          <span class="icon">⚡</span>
+          <div class="title">Divisibilidade</div>
+          <div class="subtitle">Truques mágicos</div>
+        </div>
+        <div class="menu-card c1" id="card-7" onclick="goTo('quiz')" style="grid-column: span 2; background: linear-gradient(135deg, #FBBF24, #F97316); color: white;">
+          <span class="icon">🎮</span>
+          <div class="title" style="color:white; font-size:15px;">DESAFIO FINAL!</div>
+          <div class="subtitle" style="color:rgba(255,255,255,0.9); font-size:11px;">Mostre tudo o que aprendeu</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DIVISORES ============ -->
+    <section class="screen" id="screen-div">
+      <h2 class="section-title">🍎 Divisores</h2>
+
+      <div class="card highlight">
+        <h3>O que é divisor?</h3>
+        <p>Um número é <b>divisor</b> de outro quando a divisão dá resto <b>zero</b>. É como dividir bolinhas em sacos iguais sem sobrar nenhuma!</p>
+      </div>
+
+      <div class="card example">
+        <h3>Exemplo divertido 🎈</h3>
+        <p>Imagine <b>12 balões</b>. De quantas formas iguais você pode dividir?</p>
+        <div class="emoji-bullet"><span class="e">1️⃣</span><span>1 caixa com 12 balões</span></div>
+        <div class="emoji-bullet"><span class="e">2️⃣</span><span>2 caixas com 6 balões cada</span></div>
+        <div class="emoji-bullet"><span class="e">3️⃣</span><span>3 caixas com 4 balões cada</span></div>
+        <div class="emoji-bullet"><span class="e">4️⃣</span><span>4 caixas com 3 balões cada</span></div>
+        <div class="emoji-bullet"><span class="e">6️⃣</span><span>6 caixas com 2 balões cada</span></div>
+        <div class="emoji-bullet"><span class="e">🔟</span><span>12 caixas com 1 balão cada</span></div>
+        <p style="margin-top:10px;">Então os divisores de 12 são: <b style="color:var(--primary-dark);">1, 2, 3, 4, 6 e 12</b> ✨</p>
+      </div>
+
+      <div class="card">
+        <h3>Experimente! 🧪</h3>
+        <p>Escolha um número e descubra todos os divisores dele:</p>
+        <div class="number-picker">
+          <button class="picker-btn" onclick="changeNum(-1)">−</button>
+          <div class="picker-display" id="numDisplay">12</div>
+          <button class="picker-btn" onclick="changeNum(1)">+</button>
+        </div>
+        <div class="divisor-chips" id="divChips"></div>
+        <p style="text-align:center; font-size:13px; color:var(--text-light);" id="divCount"></p>
+      </div>
+
+      <div class="card tip">
+        <h3>💡 Atividade do livro</h3>
+        <p><b>Liste os divisores de:</b></p>
+        <div class="emoji-bullet"><span class="e">A)</span><span><b>12</b> → 1, 2, 3, 4, 6, 12</span></div>
+        <div class="emoji-bullet"><span class="e">B)</span><span><b>32</b> → 1, 2, 4, 8, 16, 32</span></div>
+        <div class="emoji-bullet"><span class="e">C)</span><span><b>40</b> → 1, 2, 4, 5, 8, 10, 20, 40</span></div>
+        <div class="emoji-bullet"><span class="e">D)</span><span><b>63</b> → 1, 3, 7, 9, 21, 63</span></div>
+      </div>
+
+      <button class="btn full success" onclick="completeAndNext('div','comuns')">Aprendi! Próxima missão ➡️</button>
+    </section>
+
+    <!-- ============ DIVISORES COMUNS ============ -->
+    <section class="screen" id="screen-comuns">
+      <h2 class="section-title">👫 Divisores Comuns</h2>
+
+      <div class="card highlight">
+        <h3>A história da turminha</h3>
+        <p>Uma sala do 5º ano tem <b>12 meninos</b> e <b>18 meninas</b>. Eles querem formar grupos com a mesma quantidade, só de meninos OU só de meninas. Como organizar?</p>
+      </div>
+
+      <div class="card">
+        <h3>Quantas pessoas em cada grupo?</h3>
+        <p>Toque num número para ver se funciona:</p>
+        <div class="group-options" id="groupOpts"></div>
+        <div class="group-demo" id="groupDemo">
+          <div class="group-row" id="row-girls">
+            <div class="gtitle">👧 18 meninas:</div>
+            <div class="kids-line" id="girlsLine"></div>
+            <div style="font-size:12px; margin-top:6px; color:var(--text-light);" id="girlsInfo">Toque num número acima</div>
+          </div>
+          <div class="group-row" id="row-boys">
+            <div class="gtitle">👦 12 meninos:</div>
+            <div class="kids-line" id="boysLine"></div>
+            <div style="font-size:12px; margin-top:6px; color:var(--text-light);" id="boysInfo">Toque num número acima</div>
+          </div>
+        </div>
+        <div class="fun-quote" id="commonResult" style="display:none;"></div>
+      </div>
+
+      <div class="card tip">
+        <h3>💡 Conclusão</h3>
+        <p>Os números que dividem <b>12</b> e <b>18</b> certinho são: <b style="color:var(--success);">1, 2, 3 e 6</b>.</p>
+        <p>Esses são chamados de <b>divisores comuns</b>! São os divisores que aparecem nos dois números. 🎯</p>
+      </div>
+
+      <button class="btn full success" onclick="completeAndNext('comuns','mdc')">Próxima missão ➡️</button>
+    </section>
+
+    <!-- ============ MDC ============ -->
+    <section class="screen" id="screen-mdc">
+      <h2 class="section-title">🏆 MDC - Maior Divisor Comum</h2>
+
+      <div class="card highlight">
+        <h3>O grandão dos divisores!</h3>
+        <p>O <b>MDC</b> é o <b>maior</b> número que aparece como divisor de dois (ou mais) números ao mesmo tempo. É tipo o "campeão" dos divisores comuns! 👑</p>
+      </div>
+
+      <div class="card example">
+        <h3>Exemplo: MDC de 12 e 18</h3>
+        <p>Divisores comuns de 12 e 18: <b>1, 2, 3, 6</b></p>
+        <p>Qual é o maior? 🤔</p>
+        <p style="text-align:center; font-size:32px; font-weight:900; color:var(--secondary); margin-top:8px;">MDC(12, 18) = 6</p>
+      </div>
+
+      <div class="card">
+        <h3>Calcule o MDC! 🧮</h3>
+        <p>Digite dois números e descubra o MDC:</p>
+        <div class="kid-input">
+          <input type="number" id="mdcA" value="6" min="1" max="200">
+          <span style="font-size:24px; font-weight:800; color:var(--text-light);">e</span>
+          <input type="number" id="mdcB" value="8" min="1" max="200">
+        </div>
+        <button class="btn full purple" onclick="calcMDC()">✨ Calcular MDC ✨</button>
+        <div id="mdcResult" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card tip">
+        <h3>📝 Exercício do livro (questão 18)</h3>
+        <p>Melina tem fitas de <b>6m</b> e <b>8m</b>. Quer cortar em pedaços iguais, os <b>maiores possíveis</b>. Qual o tamanho?</p>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer; color:var(--primary); font-weight:700;">Ver resposta 👀</summary>
+          <p style="margin-top:8px;">MDC(6, 8) = <b style="color:var(--secondary);">2 metros</b>! Cada pedaço terá 2 metros: a fita vermelha vira 3 pedaços e a azul vira 4 pedaços. ✂️</p>
+        </details>
+      </div>
+
+      <div class="card tip">
+        <h3>📝 Exercício 17 do livro</h3>
+        <p>Toque para ver os divisores comuns:</p>
+        <div id="ex17"></div>
+      </div>
+
+      <button class="btn full success" onclick="completeAndNext('mdc','primos')">Próxima missão ➡️</button>
+    </section>
+
+    <!-- ============ PRIMOS E COMPOSTOS ============ -->
+    <section class="screen" id="screen-primos">
+      <h2 class="section-title">💎 Primos e Compostos</h2>
+
+      <div class="card highlight">
+        <h3>O que é número primo?</h3>
+        <p>Um número primo só pode ser dividido <b>certinho</b> por <b>1</b> e por <b>ele mesmo</b>. Tem só 2 divisores!</p>
+        <p style="font-size:13px; color:var(--text-light);">A palavra "primo" vem do latim <i>primus</i>, que quer dizer "primeiro" ✨</p>
+      </div>
+
+      <div class="card example">
+        <h3>Exemplos rapidinhos</h3>
+        <div class="prime-fact is-prime">
+          <div class="num">2</div>
+          <div class="info"><b>É primo!</b> Só pode ser dividido por 1 e por 2.</div>
+        </div>
+        <div class="prime-fact is-prime">
+          <div class="num">7</div>
+          <div class="info"><b>É primo!</b> Só pode ser dividido por 1 e por 7.</div>
+        </div>
+        <div class="prime-fact not-prime">
+          <div class="num">9</div>
+          <div class="info"><b>Não é primo (é composto)!</b> Pode ser dividido por 1, 3 e 9.</div>
+        </div>
+        <div class="prime-fact not-prime">
+          <div class="num">12</div>
+          <div class="info"><b>Composto!</b> Tem vários divisores: 1, 2, 3, 4, 6 e 12.</div>
+        </div>
+      </div>
+
+      <div class="card tip">
+        <h3>⚠️ Atenção!</h3>
+        <p>O número <b>1</b> NÃO é primo nem composto. Ele é <b>especial</b>! 🌟</p>
+      </div>
+
+      <div class="card">
+        <h3>Teste você mesma! 🔮</h3>
+        <p>Digite um número e descubra:</p>
+        <div class="kid-input">
+          <input type="number" id="primeTest" value="7" min="1" max="500">
+        </div>
+        <button class="btn full purple" onclick="testPrime()">É primo? 🤔</button>
+        <div id="primeResult" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="fun-quote">🤓 Curiosidade: a criptografia que protege seus dados na internet usa números primos enormes! 🔐</div>
+
+      <button class="btn full success" onclick="completeAndNext('primos','crivo')">Vamos caçar primos! 🔍</button>
+    </section>
+
+    <!-- ============ CRIVO ============ -->
+    <section class="screen" id="screen-crivo">
+      <h2 class="section-title">🔍 Crivo de Eratóstenes</h2>
+
+      <div class="card highlight">
+        <h3>Caça aos primos!</h3>
+        <p>Vamos descobrir todos os números primos de 1 a 60. Esse método é antigo, criado por <b>Eratóstenes</b> faz mais de 2.000 anos! 🏛️</p>
+      </div>
+
+      <div class="card">
+        <h3>Como jogar:</h3>
+        <div class="emoji-bullet"><span class="e">1️⃣</span><span>Comece riscando o <b>1</b> (não é primo)</span></div>
+        <div class="emoji-bullet"><span class="e">2️⃣</span><span>Circule o <b>2</b> e risque os múltiplos dele</span></div>
+        <div class="emoji-bullet"><span class="e">3️⃣</span><span>Continue com o próximo número não riscado</span></div>
+        <div class="emoji-bullet"><span class="e">🎯</span><span>No final, sobram <b>17</b> primos!</span></div>
+
+        <div class="legend">
+          <span><span class="dot" style="background:#DCFCE7;border:2px solid #4ADE80;"></span> Primo (toque 1x)</span>
+          <span><span class="dot" style="background:#FEE2E2;border:2px solid #FCA5A5;"></span> Composto (toque 2x)</span>
+        </div>
+
+        <div class="number-grid" id="sieveGrid"></div>
+
+        <div class="btn-row">
+          <button class="btn secondary" onclick="autoSieve()">✨ Mostrar tudo</button>
+          <button class="btn" onclick="resetSieve()" style="background:var(--text-light);">🔄 Recomeçar</button>
+        </div>
+
+        <p class="bottom-tip" id="sieveStatus">Encontre <b>17 primos</b> entre 1 e 60!</p>
+      </div>
+
+      <div class="card tip" id="primeListCard" style="display:none;">
+        <h3>🎉 Os 17 primos de 1 a 60 são:</h3>
+        <p style="font-size:16px; line-height:1.7; text-align:center; font-weight:700; color:var(--primary-dark);">2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59</p>
+      </div>
+
+      <button class="btn full success" onclick="completeAndNext('crivo','regras')">Próxima missão ➡️</button>
+    </section>
+
+    <!-- ============ DIVISIBILIDADE ============ -->
+    <section class="screen" id="screen-regras">
+      <h2 class="section-title">⚡ Truques de Divisibilidade</h2>
+
+      <div class="card highlight">
+        <h3>Magias matemáticas!</h3>
+        <p>Quer saber se um número é divisível por outro <b>sem fazer conta</b>? Veja esses truques rapidinhos:</p>
+      </div>
+
+      <div class="card">
+        <h3>Toque na regra para descobrir:</h3>
+        <div class="div-rules">
+          <div class="rule-card" onclick="showRule(2)">
+            <div class="rn">÷ 2</div>
+            <div class="rt">Termina em par?</div>
+          </div>
+          <div class="rule-card" onclick="showRule(3)">
+            <div class="rn">÷ 3</div>
+            <div class="rt">Soma dos algarismos</div>
+          </div>
+          <div class="rule-card" onclick="showRule(5)">
+            <div class="rn">÷ 5</div>
+            <div class="rt">Termina em 0 ou 5</div>
+          </div>
+          <div class="rule-card" onclick="showRule(9)">
+            <div class="rn">÷ 9</div>
+            <div class="rt">Soma divisível por 9</div>
+          </div>
+          <div class="rule-card" onclick="showRule(10)">
+            <div class="rn">÷ 10</div>
+            <div class="rt">Termina em 0</div>
+          </div>
+          <div class="rule-card" onclick="showRule(4)">
+            <div class="rn">÷ 4</div>
+            <div class="rt">2 últimos divisíveis por 4</div>
+          </div>
+        </div>
+        <div class="divisibility-rule-detail" id="ruleDetail"></div>
+      </div>
+
+      <div class="card example">
+        <h3>🧪 Testador mágico</h3>
+        <p>Digite um número e veja por quais ele é divisível:</p>
+        <div class="kid-input">
+          <input type="number" id="testerNum" value="120" min="1" max="9999">
+        </div>
+        <button class="btn full purple" onclick="testDivisibility()">🔮 Testar!</button>
+        <div id="testerResult" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card tip">
+        <h3>📚 Sequência do livro (pág. 113)</h3>
+        <p style="font-family:monospace; background:white; padding:10px; border-radius:8px; text-align:center; font-weight:700;">0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28...</p>
+        <p style="margin-top:8px;">Todos terminam em <b>0, 2, 4, 6 ou 8</b> → todos são divisíveis por 2! 🎯</p>
+      </div>
+
+      <button class="btn full success" onclick="completeAndNext('regras','quiz')">Hora do desafio! 🎮</button>
+    </section>
+
+    <!-- ============ QUIZ ============ -->
+    <section class="screen" id="screen-quiz">
+      <h2 class="section-title">🎮 Desafio Final</h2>
+      <div id="quizArea"></div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    Feito com 💜 para a aventura matemática<br>
+    Baseado nas páginas 108–113 do livro
+  </footer>
+</div>
+
+<script>
+// =============== STATE ===============
+const completed = JSON.parse(localStorage.getItem('matAventura') || '{}');
+let stars = parseInt(localStorage.getItem('matStars') || '0');
+
+const screens = ['home', 'div', 'comuns', 'mdc', 'primos', 'crivo', 'regras', 'quiz'];
+const titles = {
+  home: '🚀 Aventura Matemática',
+  div: '🍎 Divisores',
+  comuns: '👫 Divisores Comuns',
+  mdc: '🏆 MDC',
+  primos: '💎 Primos & Compostos',
+  crivo: '🔍 Crivo de Eratóstenes',
+  regras: '⚡ Divisibilidade',
+  quiz: '🎮 Desafio Final'
+};
+
+function updateStars() {
+  document.getElementById('starCount').textContent = stars;
+  localStorage.setItem('matStars', stars);
+  // Progress: 6 main lessons + final quiz = 7
+  const total = 7;
+  const done = ['div','comuns','mdc','primos','crivo','regras','quiz'].filter(k => completed[k]).length;
+  document.getElementById('progressFill').style.width = (done/total*100) + '%';
+  // Mark completed cards
+  ['1','2','3','4','5','6','7'].forEach(i=>{
+    const keys = ['div','comuns','mdc','primos','crivo','regras','quiz'];
+    const card = document.getElementById('card-'+i);
+    if (card && completed[keys[i-1]]) card.classList.add('completed');
+  });
+}
+
+function goTo(screen) {
+  screens.forEach(s => {
+    document.getElementById('screen-'+s).classList.remove('active');
+  });
+  document.getElementById('screen-'+screen).classList.add('active');
+  document.getElementById('pageTitle').textContent = titles[screen];
+  document.getElementById('backBtn').classList.toggle('show', screen !== 'home');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (screen === 'div') initDivExplorer();
+  if (screen === 'comuns') initComuns();
+  if (screen === 'mdc') initEx17();
+  if (screen === 'crivo') initSieve();
+  if (screen === 'quiz') initQuiz();
+}
+
+function goHome() { goTo('home'); }
+
+function completeAndNext(current, next) {
+  if (!completed[current]) {
+    completed[current] = true;
+    stars += 5;
+    localStorage.setItem('matAventura', JSON.stringify(completed));
+    showToast('+5 ⭐ missão completa!');
+    confettiBurst();
+  }
+  updateStars();
+  setTimeout(()=> goTo(next), 800);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function confettiBurst() {
+  const colors = ['#F97316','#A855F7','#EC4899','#10B981','#0EA5E9','#FBBF24'];
+  for (let i=0; i<40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100 + '%';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration = (2 + Math.random()*1.5) + 's';
+    c.style.animationDelay = Math.random()*0.3 + 's';
+    document.body.appendChild(c);
+    setTimeout(()=> c.remove(), 4000);
+  }
+}
+
+// =============== DIVISORS EXPLORER ===============
+let currentNum = 12;
+
+function getDivisors(n) {
+  const d = [];
+  for (let i=1; i<=n; i++) if (n%i===0) d.push(i);
+  return d;
+}
+
+function initDivExplorer() { renderDivisors(); }
+
+function changeNum(delta) {
+  currentNum = Math.max(1, Math.min(200, currentNum + delta));
+  document.getElementById('numDisplay').textContent = currentNum;
+  renderDivisors();
+}
+
+function renderDivisors() {
+  const divs = getDivisors(currentNum);
+  const chips = document.getElementById('divChips');
+  chips.innerHTML = '';
+  divs.forEach((d,i) => {
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.textContent = d;
+    c.style.animationDelay = (i*0.05) + 's';
+    chips.appendChild(c);
+  });
+  document.getElementById('divCount').textContent =
+    `${currentNum} tem ${divs.length} divisor${divs.length>1?'es':''}` +
+    (divs.length === 2 ? ' → é primo! 💎' : '');
+}
+
+// =============== DIVISORES COMUNS ===============
+const groupNums = [1, 2, 3, 4, 5, 6, 9, 12];
+let currentGroup = 6;
+
+function initComuns() {
+  const opts = document.getElementById('groupOpts');
+  opts.innerHTML = '';
+  groupNums.forEach(n => {
+    const b = document.createElement('button');
+    b.textContent = n;
+    b.dataset.n = n;
+    b.onclick = () => selectGroup(n);
+    opts.appendChild(b);
+  });
+  selectGroup(6);
+}
+
+function selectGroup(n) {
+  currentGroup = n;
+  document.querySelectorAll('#groupOpts button').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.n) === n);
+  });
+
+  // 18 girls
+  const girlsLine = document.getElementById('girlsLine');
+  const boysLine = document.getElementById('boysLine');
+  girlsLine.innerHTML = '';
+  boysLine.innerHTML = '';
+  for (let i=0; i<18; i++) {
+    const k = document.createElement('span');
+    k.className = 'kid girl';
+    k.textContent = '👧';
+    girlsLine.appendChild(k);
+  }
+  for (let i=0; i<12; i++) {
+    const k = document.createElement('span');
+    k.className = 'kid boy';
+    k.textContent = '👦';
+    boysLine.appendChild(k);
+  }
+  // Visual gap
+  const girlsOk = 18 % n === 0;
+  const boysOk = 12 % n === 0;
+  document.getElementById('row-girls').classList.toggle('active', girlsOk);
+  document.getElementById('row-boys').classList.toggle('active', boysOk);
+  document.getElementById('girlsInfo').innerHTML = girlsOk
+    ? `✅ Forma <b>${18/n}</b> grupo${18/n>1?'s':''} de <b>${n}</b>`
+    : `❌ Não dá! ${18}÷${n} sobra ${18%n}`;
+  document.getElementById('boysInfo').innerHTML = boysOk
+    ? `✅ Forma <b>${12/n}</b> grupo${12/n>1?'s':''} de <b>${n}</b>`
+    : `❌ Não dá! ${12}÷${n} sobra ${12%n}`;
+
+  const result = document.getElementById('commonResult');
+  if (girlsOk && boysOk) {
+    result.style.display = 'block';
+    result.innerHTML = `🎉 ${n} é divisor comum de 12 e 18!`;
+  } else {
+    result.style.display = 'none';
+  }
+}
+
+// =============== MDC ===============
+function gcd(a,b) { return b ? gcd(b, a%b) : a; }
+function commonDivs(a,b) {
+  return getDivisors(a).filter(d => b % d === 0);
+}
+
+function calcMDC() {
+  const a = parseInt(document.getElementById('mdcA').value) || 1;
+  const b = parseInt(document.getElementById('mdcB').value) || 1;
+  const cd = commonDivs(a,b);
+  const m = gcd(a,b);
+  const html = `
+    <p style="font-size:14px; margin-bottom:8px;">Divisores de <b>${a}</b>:</p>
+    <div class="divisor-chips">${getDivisors(a).map(d => `<div class="chip ${cd.includes(d)?'shared':''}">${d}</div>`).join('')}</div>
+    <p style="font-size:14px; margin-bottom:8px;">Divisores de <b>${b}</b>:</p>
+    <div class="divisor-chips">${getDivisors(b).map(d => `<div class="chip ${cd.includes(d)?'shared':''}">${d}</div>`).join('')}</div>
+    <p style="text-align:center; font-size:14px; margin-top:8px; color:var(--text-light);">Comuns (verdes): ${cd.join(', ')}</p>
+    <div class="divisor-chips" style="margin-top:8px;"><div class="chip mdc">MDC = ${m}</div></div>
+  `;
+  document.getElementById('mdcResult').innerHTML = html;
+}
+
+function initEx17() {
+  const ex = [
+    {a:6,b:8}, {a:15,b:25}, {a:14,b:21}, {a:11,b:13}
+  ];
+  const labels = ['A','B','C','D'];
+  const c = document.getElementById('ex17');
+  c.innerHTML = ex.map((q,i) => {
+    const cd = commonDivs(q.a,q.b);
+    return `
+      <details style="margin-top:8px; padding:10px; background:white; border-radius:10px; border:2px solid var(--border);">
+        <summary style="cursor:pointer; font-weight:700; color:var(--primary-dark);">${labels[i]}) ${q.a} e ${q.b}</summary>
+        <p style="margin-top:6px; font-size:13px;">Divisores de ${q.a}: ${getDivisors(q.a).join(', ')}</p>
+        <p style="font-size:13px;">Divisores de ${q.b}: ${getDivisors(q.b).join(', ')}</p>
+        <p style="margin-top:6px;"><b>Divisores comuns:</b> <span style="color:var(--success);">${cd.join(', ')}</span></p>
+      </details>
+    `;
+  }).join('');
+}
+
+// =============== PRIMES ===============
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n < 4) return true;
+  if (n % 2 === 0) return false;
+  for (let i=3; i*i<=n; i+=2) if (n%i===0) return false;
+  return true;
+}
+
+function testPrime() {
+  const n = parseInt(document.getElementById('primeTest').value);
+  if (!n || n<1) {
+    document.getElementById('primeResult').innerHTML = '<div class="tester-result idle">Digite um número válido</div>';
+    return;
+  }
+  const divs = getDivisors(n);
+  let html, cls;
+  if (n === 1) {
+    html = `<b>${n}</b> não é primo nem composto. É um número especial! 🌟`;
+    cls = 'idle';
+  } else if (isPrime(n)) {
+    html = `🎉 <b>${n} é PRIMO!</b><br><span style="font-size:13px; font-weight:500;">Só tem 2 divisores: 1 e ${n}</span>`;
+    cls = 'yes';
+  } else {
+    html = `<b>${n} é COMPOSTO</b><br><span style="font-size:13px; font-weight:500;">Divisores: ${divs.join(', ')}</span>`;
+    cls = 'no';
+  }
+  document.getElementById('primeResult').innerHTML = `<div class="tester-result ${cls}">${html}</div>`;
+}
+
+// =============== SIEVE ===============
+let sieveState = {};
+
+function initSieve() {
+  const grid = document.getElementById('sieveGrid');
+  grid.innerHTML = '';
+  for (let i=1; i<=60; i++) {
+    const c = document.createElement('div');
+    c.className = 'num-cell';
+    c.textContent = i;
+    c.dataset.n = i;
+    if (sieveState[i] === 'circle') c.classList.add('circled');
+    if (sieveState[i] === 'cross') c.classList.add('crossed');
+    c.onclick = () => toggleCell(i, c);
+    grid.appendChild(c);
+  }
+  updateSieveStatus();
+}
+
+function toggleCell(n, el) {
+  const cur = sieveState[n];
+  if (!cur) { sieveState[n] = 'circle'; el.classList.add('circled'); }
+  else if (cur === 'circle') {
+    sieveState[n] = 'cross'; el.classList.remove('circled'); el.classList.add('crossed');
+  } else { sieveState[n] = null; el.classList.remove('crossed'); }
+  updateSieveStatus();
+}
+
+function autoSieve() {
+  sieveState = {};
+  for (let i=1; i<=60; i++) {
+    sieveState[i] = (i === 1) ? 'cross' : (isPrime(i) ? 'circle' : 'cross');
+  }
+  initSieve();
+  document.getElementById('primeListCard').style.display = 'block';
+  confettiBurst();
+}
+
+function resetSieve() {
+  sieveState = {};
+  initSieve();
+  document.getElementById('primeListCard').style.display = 'none';
+}
+
+function updateSieveStatus() {
+  const circled = Object.entries(sieveState).filter(([k,v]) => v === 'circle').map(([k])=>parseInt(k));
+  const correctPrimes = circled.filter(n => isPrime(n));
+  const status = document.getElementById('sieveStatus');
+  if (circled.length === 0) {
+    status.innerHTML = `Encontre <b>17 primos</b> entre 1 e 60!`;
+  } else {
+    status.innerHTML = `Você marcou ${circled.length} como primos. <b>${correctPrimes.length}</b> estão corretos!`;
+  }
+  if (correctPrimes.length === 17 && circled.length === 17) {
+    document.getElementById('primeListCard').style.display = 'block';
+    if (!completed.crivoBonus) {
+      completed.crivoBonus = true;
+      stars += 10;
+      showToast('🏆 Caçadora de primos! +10 ⭐');
+      confettiBurst();
+      updateStars();
+    }
+  }
+}
+
+// =============== DIVISIBILIDADE ===============
+const rules = {
+  2: {title:'Divisível por 2', body:`O número precisa terminar em <b>0, 2, 4, 6 ou 8</b> (ser par).`, ex:'34, 78, 120, 256 → todos pares ✅'},
+  3: {title:'Divisível por 3', body:`A <b>soma dos algarismos</b> deve ser divisível por 3.`, ex:'462 → 4+6+2 = 12, e 12 ÷ 3 = 4 ✅'},
+  5: {title:'Divisível por 5', body:`O número precisa terminar em <b>0 ou 5</b>.`, ex:'25, 80, 125, 470 ✅'},
+  9: {title:'Divisível por 9', body:`A <b>soma dos algarismos</b> deve ser divisível por 9.`, ex:'729 → 7+2+9 = 18, e 18 ÷ 9 = 2 ✅'},
+  10:{title:'Divisível por 10',body:`O número precisa terminar em <b>0</b>.`, ex:'30, 100, 580, 9000 ✅'},
+  4: {title:'Divisível por 4', body:`Os <b>dois últimos algarismos</b> formam um número divisível por 4.`, ex:'1.236 → "36" e 36÷4 = 9 ✅'}
+};
+
+function showRule(n) {
+  document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const r = rules[n];
+  const el = document.getElementById('ruleDetail');
+  el.innerHTML = `<b>${r.title}</b><br>${r.body}<div class="ex">📌 ${r.ex}</div>`;
+  el.classList.add('show');
+}
+
+function testDivisibility() {
+  const n = parseInt(document.getElementById('testerNum').value);
+  if (!n || n<1) {
+    document.getElementById('testerResult').innerHTML = '<div class="tester-result idle">Digite um número válido</div>';
+    return;
+  }
+  const checks = [2,3,4,5,9,10];
+  const html = checks.map(d => {
+    const ok = n % d === 0;
+    return `<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:${ok?'#D1FAE5':'#FEE2E2'}; border-radius:10px; margin-bottom:6px;">
+      <b style="color:${ok?'#065F46':'#991B1B'};">${n} ÷ ${d}</b>
+      <span style="font-weight:700;">${ok?'✅ Sim!':'❌ Não'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('testerResult').innerHTML = html;
+}
+
+// =============== QUIZ ===============
+const questions = [
+  { q: 'Quais são os divisores de 12?', opts: ['1, 2, 3, 4, 6, 12', '1, 2, 4, 6, 12', '2, 3, 4, 6', '1, 3, 4, 12'], correct: 0 },
+  { q: 'O número 17 é primo ou composto?', opts: ['Composto', 'Primo', 'Nenhum dos dois', 'Os dois'], correct: 1 },
+  { q: 'Qual é o MDC entre 12 e 18?', opts: ['2', '3', '6', '12'], correct: 2 },
+  { q: 'Qual número NÃO é primo?', opts: ['7', '11', '15', '13'], correct: 2 },
+  { q: 'O número 1 é:', opts: ['Primo', 'Composto', 'Nem primo nem composto', 'Os dois'], correct: 2 },
+  { q: '230 é divisível por quais? (mais correto)', opts: ['só 2', '2 e 5', '2, 5 e 10', '3 e 5'], correct: 2 },
+  { q: 'Melina quer cortar fitas de 6m e 8m em pedaços iguais e maiores possíveis. Qual o tamanho?', opts: ['1m', '2m', '3m', '6m'], correct: 1 },
+  { q: 'Quantos primos existem entre 1 e 60?', opts: ['15', '17', '20', '12'], correct: 1 },
+  { q: 'O número 462 é divisível por 3 porque...', opts: ['termina em 2', '4+6+2 = 12 e 12÷3=4', 'é par', 'tem 3 algarismos'], correct: 1 },
+  { q: 'Qual é o menor número primo?', opts: ['1', '2', '3', '0'], correct: 1 }
+];
+let qIdx = 0, qScore = 0;
+
+function initQuiz() {
+  qIdx = 0; qScore = 0;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const area = document.getElementById('quizArea');
+  if (qIdx >= questions.length) {
+    showQuizDone();
+    return;
+  }
+  const q = questions[qIdx];
+  const letters = ['A','B','C','D'];
+  area.innerHTML = `
+    <div class="quiz-question">
+      <div class="qn">PERGUNTA ${qIdx+1} DE ${questions.length}</div>
+      ${q.q}
+    </div>
+    <div class="quiz-options" id="quizOpts">
+      ${q.opts.map((o,i) => `
+        <button class="quiz-opt" data-i="${i}" onclick="answer(${i})">
+          <span class="letter">${letters[i]}</span>
+          <span>${o}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <p style="text-align:center; margin-top:14px; color:var(--text-light); font-size:13px;">⭐ Pontos: ${qScore}</p>
+  `;
+}
+
+function answer(i) {
+  const q = questions[qIdx];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach(o => o.classList.add('disabled'));
+  const fb = document.getElementById('feedback');
+  if (i === q.correct) {
+    opts[i].classList.add('correct');
+    qScore++;
+    stars += 2;
+    fb.className = 'feedback right show';
+    fb.innerHTML = '🎉 Correto! +2 ⭐';
+    confettiBurst();
+  } else {
+    opts[i].classList.add('wrong');
+    opts[q.correct].classList.add('correct');
+    fb.className = 'feedback wrong show';
+    fb.innerHTML = '😅 Quase! A resposta certa está em verde.';
+  }
+  updateStars();
+  setTimeout(() => {
+    qIdx++;
+    renderQuestion();
+  }, 1700);
+}
+
+function showQuizDone() {
+  if (!completed.quiz) {
+    completed.quiz = true;
+    stars += 10;
+    localStorage.setItem('matAventura', JSON.stringify(completed));
+    updateStars();
+  }
+  let medal = '🥉', msg = 'Bom esforço!';
+  const pct = qScore / questions.length;
+  if (pct >= 0.9) { medal = '🏆'; msg = 'Mestre dos números!'; }
+  else if (pct >= 0.7) { medal = '🥇'; msg = 'Excelente trabalho!'; }
+  else if (pct >= 0.5) { medal = '🥈'; msg = 'Muito bem!'; }
+
+  document.getElementById('quizArea').innerHTML = `
+    <div class="completion">
+      <span class="trophy">${medal}</span>
+      <h2>${msg}</h2>
+      <p>Você acertou <b>${qScore} de ${questions.length}</b> perguntas!</p>
+      <p style="font-size:14px;">⭐ Total de estrelas: <b>${stars}</b></p>
+      <div class="btn-row" style="justify-content:center; margin-top:20px;">
+        <button class="btn purple" onclick="initQuiz()">🔄 Tentar de novo</button>
+        <button class="btn success" onclick="goHome()">🏠 Início</button>
+      </div>
+    </div>
+  `;
+  confettiBurst();
+  setTimeout(confettiBurst, 400);
+  setTimeout(confettiBurst, 800);
+}
+
+// =============== INIT ===============
+updateStars();
+</script>
+</body>
+</html>
